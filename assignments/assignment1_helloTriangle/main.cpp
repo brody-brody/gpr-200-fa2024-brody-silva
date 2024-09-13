@@ -8,14 +8,14 @@
 
 #include "assets/shader.h"
 
-const int SCREEN_WIDTH = 1000;
-const int SCREEN_HEIGHT = 1000;
+const int SCREEN_WIDTH = 800;
+const int SCREEN_HEIGHT = 800;
 
 float vertices[] =
 {
    -0.5f, -0.5f, 0.0f,  1.0f, 0.0f, 0.0f, // bottom right
 	0.5f, -0.5f, 0.0f,  0.0f, 1.0f, 0.0f, // bottom right
-	0.0f,  0.5f, 0.0f,  0.0f, 0.0f, 1.0f // bottom right
+	0.0f,  0.3661f, 0.0f,  0.0f, 0.0f, 1.0f // bottom right
 }; // gpu will read this as 9 floats
 
 int main() {
@@ -84,7 +84,7 @@ int main() {
 		ourShader.use();
 
 		//update colors based on uniform time
-		int timeLocation = glGetUniformLocation(ourShader.ID, "time");
+		int timeLocation = glGetUniformLocation(ourShader.ID, "uniTime");
 		glUniform1f(timeLocation, updateTime);
 
 		//render the triangle
