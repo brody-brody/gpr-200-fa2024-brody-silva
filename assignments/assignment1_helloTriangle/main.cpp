@@ -6,7 +6,7 @@
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 
-#include "assets/shader.h"
+#include "../core/bsilva/shader.h"
 
 const int SCREEN_WIDTH = 800;
 const int SCREEN_HEIGHT = 800;
@@ -35,8 +35,6 @@ int main() {
 		return 1;
 	}
 	//Initialization goes here!
-
-
 
 	unsigned int VBO; // VBO stands for Vertex Buffer Object
 	glGenBuffers(1, &VBO); // generic buffer

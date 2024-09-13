@@ -1,8 +1,8 @@
 #ifndef SHADER_H
 #define SHADER_H
 
-#include <ew/external/glad.h>
-#include <ew/ewMath/ewMath.h>
+#include "../ew/external/glad.h"
+#include "../ew/ewMath/ewMath.h"
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 
