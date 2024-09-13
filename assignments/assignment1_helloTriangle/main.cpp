@@ -76,7 +76,7 @@ int main() {
 
 		glfwPollEvents();
 		//Clear framebuffer
-		glClearColor(0.75f, 0.5f, 0.9f, 1.0f);
+		glClearColor(0.5f * sin(updateTime) + 0.5f, 0.5f * sin(updateTime) + 0.5f, 0.5f * sin(updateTime) + 0.5f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT); // clearing color buffer
 
 		//Drawing happens here!
