@@ -34,7 +34,6 @@ int main() {
 		printf("GLAD Failed to load GL headers");
 		return 1;
 	}
-	//Initialization goes here!
 
 	unsigned int VBO; // VBO stands for Vertex Buffer Object
 	glGenBuffers(1, &VBO); // generic buffer
@@ -44,14 +43,9 @@ int main() {
 
 	// glNamedBufferData(VBO, sizeof(vertices, vertices, GL_STATIC_DRAW)   ---   equivalency to lines 39 and 40
 
-	Shader ourShader("assets/shader.vs", "assets/shader.fs"); // creating shader object, with the type of vertex shader
-
-	// shader program
-	unsigned int shaderProgram;
-	shaderProgram = glCreateProgram();
+	Shader ourShader("assets/shader.vert", "assets/shader.frag"); // creating shader object, with the type of vertex shader
 
 	// linking vertex attributes
-
 	unsigned int VAO;
 	glGenVertexArrays(1, &VAO);
 
