@@ -37,6 +37,8 @@ Texture2D::Texture2D(const std::string& path) {
     stbi_image_free(data);
 }
 
-void Texture2D::bind() const {
+// texture num would be the number of the texture in the shader youre using, to handle multiple textures per shader
+void Texture2D::bind(int textureNum) const {
+    glActiveTexture(GL_TEXTURE0 + textureNum);
     glBindTexture(GL_TEXTURE_2D, ID);
 }

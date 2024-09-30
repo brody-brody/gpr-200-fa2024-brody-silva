@@ -51,7 +51,8 @@ int main() {
 	glGenBuffers(1, &VBO);
 	glGenBuffers(1, &EBO);
 
-	Shader ourShader("assets/shader.vert", "assets/shader.frag"); // creating shader object, with the type of vertex shader
+	Shader foreground("assets/shader.vert", "assets/shader.frag"); // creating shader object, with the type of vertex shader
+	Shader background("assets/bg.vert", "assets/bg.frag");
 
 	// 1. bind Vertex Array Object
 	glBindVertexArray(VAO);
@@ -75,10 +76,16 @@ int main() {
 
 	// creating texture from class
 	Texture2D pirateShip("assets/pixelThousandSunny.png");
+	Texture2D water("assets/water.png");
+	Texture2D fish("assets/fishSmall.png");
 
+	// setting up textures to be mixed
+	background.use();
+	background.setInt("fish", 1);
 
 	//Render loop
 	while (!glfwWindowShouldClose(window)) {
+
 		GLfloat updateTime = glfwGetTime();
 
 		glfwPollEvents();
@@ -86,14 +93,34 @@ int main() {
 		glClearColor(0.5f, 0.5f, 0.5f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT); // clearing color buffer
 
-		//render the thang
-		pirateShip.bind();
+		//use bgshader
+		background.use();
 
-		ourShader.use();
-
-		int timeLocation = glGetUniformLocation(ourShader.ID, "uniTime");
+		//set bg shader uniforms
+		int timeLocation = glGetUniformLocation(background.ID, "uniTime");
 		glUniform1f(timeLocation, updateTime);
 
+		//bind bg textures
+		water.bind(0);
+		fish.bind(1);
+
+		//draw quad
+
+		glBindVertexArray(VAO);
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+
+		//use character shader
+		foreground.use();
+
+		// set character shader uniforms
+		timeLocation = glGetUniformLocation(foreground.ID, "uniTime");
+		glUniform1f(timeLocation, updateTime);
+
+		// bind character textures
+		pirateShip.bind(0);
+
+		// draw quad
 		glBindVertexArray(VAO);
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 

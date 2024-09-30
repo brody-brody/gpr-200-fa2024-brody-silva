@@ -21,7 +21,7 @@ public:
     Texture2D(const std::string& path);
 
     // binding texture
-    void bind() const;
+    void bind(int textureNum) const;
 };
 
 #endif
