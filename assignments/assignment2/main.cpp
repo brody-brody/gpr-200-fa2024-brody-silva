@@ -8,6 +8,7 @@
 #include <glm/glm.hpp>
 
 #include "../core/bsilva/shader.h"
+#include "../core/bsilva/texture2D.h"
 
 const int SCREEN_WIDTH = 800;
 const int SCREEN_HEIGHT = 800;
@@ -72,34 +73,8 @@ int main() {
 	glEnableVertexAttribArray(2);
 
 
-	// texture business
-	unsigned int texture;
-	glGenTextures(1, &texture);
-
-	glBindTexture(GL_TEXTURE_2D, texture);
-
-	// set the texture wrapping parameters
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	// set texture wrapping to GL_REPEAT (default wrapping method)
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	// set texture filtering parameters
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-	int width, height, nrChannels;
-	unsigned char* data = stbi_load("assets/pixelThousandSunny.png", &width, &height, &nrChannels, 0);
-
-	if (data)
-	{
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-		glGenerateMipmap(GL_TEXTURE_2D);
-	}
-	else
-	{
-		printf("Failed to load texture");
-	}
-
-	stbi_image_free(data);
-
+	// creating texture from class
+	Texture2D pirateShip("assets/pixelThousandSunny.png");
 
 
 	//Render loop
@@ -111,10 +86,8 @@ int main() {
 		glClearColor(0.5f, 0.5f, 0.5f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT); // clearing color buffer
 
-		//Drawing happens here!
-
 		//render the thang
-		glBindTexture(GL_TEXTURE_2D, texture);
+		pirateShip.bind();
 
 		ourShader.use();
 
