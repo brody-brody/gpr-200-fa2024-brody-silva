@@ -10,8 +10,8 @@
 #include "../core/bsilva/shader.h"
 #include "../core/bsilva/texture2D.h"
 
-const int SCREEN_WIDTH = 800;
-const int SCREEN_HEIGHT = 800;
+const int SCREEN_WIDTH = 1600;
+const int SCREEN_HEIGHT = 1600;
 
 float vertices[] = {
 	// positions          // colors           // texture coords
