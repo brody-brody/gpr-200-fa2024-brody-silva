@@ -11,9 +11,10 @@
 
 #include "../core/bsilva/shader.h"
 #include "../core/bsilva/texture2D.h"
+#include "../core/bsilva/camera.h"
 
-const int SCREEN_WIDTH = 800;
-const int SCREEN_HEIGHT = 800;
+const int SCREEN_WIDTH = 1200;
+const int SCREEN_HEIGHT = 1200;
 
 float vertices[] = {
 	-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
@@ -62,6 +63,73 @@ unsigned int indices[] = {
 	0, 1, 3, // first triangle
 	1, 2, 3  // second triangle
 };
+glm::vec3 cubePositions[] = {
+	glm::vec3(4.0f,  -4.0f, -18.0f),
+	glm::vec3(-4.0f, -4.0f, -16.0f),
+	glm::vec3(0.0f, 4.0f, -14.0f),
+	glm::vec3(0.0f, -4.0f, -12.0f),
+	glm::vec3(-4.0f,  4.0f, -10.0f),
+	glm::vec3(4.0f, 4.0f, -8.0f),
+	glm::vec3(4.0f,  -4.0f, -6.0f),
+	glm::vec3(-4.0f,  -4.0f, -4.0f),
+	glm::vec3(0.0f,  4.0f, -2.0f)
+};
+
+Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
+float lastX = SCREEN_WIDTH / 2.0f;
+float lastY = SCREEN_HEIGHT / 2.0f;
+bool firstMouse = true;
+
+double deltaTime = 0.0f;
+
+void processInput(GLFWwindow* window)
+{
+	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+	{
+		glfwSetWindowShouldClose(window, true);
+	}
+
+	float cameraSpeed = static_cast<float>(2.5f * deltaTime);
+	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+		camera.ProcessKeyboard(FORWARD, deltaTime);
+	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+		camera.ProcessKeyboard(BACKWARD, deltaTime);
+	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+		camera.ProcessKeyboard(LEFT, deltaTime);
+	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+		camera.ProcessKeyboard(RIGHT, deltaTime);
+}
+
+void framebuffer_size_callback(GLFWwindow* window, int width, int height)
+{
+	glViewport(0, 0, width, height);
+}
+
+void mouse_callback(GLFWwindow* window, double xposIn, double yposIn)
+{
+	float xpos = static_cast<float>(xposIn);
+	float ypos = static_cast<float>(yposIn);
+
+	if (firstMouse)
+	{
+		lastX = xpos;
+		lastY = ypos;
+		firstMouse = false;
+	}
+
+	float xoffset = xpos - lastX;
+	float yoffset = lastY - ypos;
+
+	lastX = xpos;
+	lastY = ypos;
+
+	camera.ProcessMouseMovement(xoffset, yoffset);
+}
+
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
+{
+	camera.ProcessMouseScroll(static_cast<float>(yoffset));
+}
 
 int main() {
 	printf("Initializing...");
@@ -69,7 +137,7 @@ int main() {
 		printf("GLFW failed to init!");
 		return 1;
 	}
-	GLFWwindow* window = glfwCreateWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Hello Triangle", NULL, NULL);
+	GLFWwindow* window = glfwCreateWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Field of Cubes", NULL, NULL);
 	if (window == NULL) {
 		printf("GLFW failed to create window");
 		return 1;
@@ -109,16 +177,26 @@ int main() {
 
 	Shader ourShader("assets/shader.vert", "assets/shader.frag");
 
-	Texture2D glass("assets/mcGlassTransparent.png");
+	Texture2D diamBlock("assets/diamond_block.png");
 
 	ourShader.use();
 	ourShader.setInt("texture1", 0);
+
+	double timeSinceStart = glfwGetTime();
+	double lastFrame = 0.0f;
 
 	//Render loop
 	while (!glfwWindowShouldClose(window)) {
 
 		GLfloat updateTime = glfwGetTime();
+		
+		double currentTime = glfwGetTime();
+		double deltaTimeTotal = currentTime - timeSinceStart;
+		deltaTime = currentTime - lastFrame;
+		lastFrame = currentTime;
 
+		processInput(window);
+		
 		glfwPollEvents();
 		//Clear framebuffer
 		glClearColor(0.75f, 0.9f, 1.0f, 1.0f);
@@ -126,30 +204,28 @@ int main() {
 
 		// activate shader
 		ourShader.use();
+		diamBlock.bind(0);
 
-		glass.bind(0);
-
-		// create transformations
-		glm::mat4 model = glm::mat4(1.0f); // make sure to initialize matrix to identity matrix first
-		glm::mat4 view = glm::mat4(1.0f);
-		glm::mat4 projection = glm::mat4(1.0f);
-		model = glm::rotate(model, (float)glfwGetTime() * glm::radians(50.0f), glm::vec3(0.5f, 1.0f, 0.0f));
-		view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
-		projection = glm::perspective(glm::radians(45.0f), (float)SCREEN_WIDTH / (float)SCREEN_HEIGHT, 0.1f, 100.0f);
-		// retrieve the matrix uniform locations
-		unsigned int modelLoc = glGetUniformLocation(ourShader.ID, "model");
-		unsigned int viewLoc = glGetUniformLocation(ourShader.ID, "view");
-		// pass them to the shaders
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, &view[0][0]);
-		// note: currently we set the projection matrix each frame, but since the projection matrix rarely changes it's often best practice to set it outside the main loop only once.
+		// passing projection matrix to shader
+		glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)SCREEN_WIDTH / (float)SCREEN_HEIGHT, 0.1f, 100.0f);
 		ourShader.setMat4("projection", projection);
+
+		// camera
+		glm::mat4 view = camera.GetViewMatrix();
+		ourShader.setMat4("view", view);
 
 		//render container
 		glBindVertexArray(VAO);
-		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+		for (unsigned int i = 0; i < 9; i++)
+		{
+			glm::mat4 model = glm::mat4(1.0f);
+			model = glm::translate(model, glm::vec3(cubePositions[i].x * sin(deltaTimeTotal), cubePositions[i].y * cos(deltaTimeTotal), cubePositions[i].z));
+			float angle = 20.0f * i * deltaTimeTotal;
+			model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
+			ourShader.setMat4("model", model);
 
-		glDrawArrays(GL_TRIANGLES, 0, 36);
+			glDrawArrays(GL_TRIANGLES, 0, 36);
+		}
 
 		glfwSwapBuffers(window); // presenting to window
 		glfwPollEvents();
