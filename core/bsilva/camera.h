@@ -10,16 +10,20 @@ enum Camera_Movement {
     FORWARD,
     BACKWARD,
     LEFT,
-    RIGHT
+    RIGHT,
+    UP,
+    DOWN,
+    SPRINT
 };
 
 // Default camera values
 const float YAW = -90.0f;
 const float PITCH = 0.0f;
-const float SPEED = 2.5f;
+const float SPEED = 5.0f;
 const float SENSITIVITY = 0.1f;
-const float ZOOM = 45.0f;
+const float ZOOM = 60.0f;
 
+bool isSprinting = false;
 
 // An abstract camera class that processes input and calculates the corresponding Euler Angles, Vectors and Matrices for use in OpenGL
 class Camera
@@ -68,6 +72,17 @@ public:
     void ProcessKeyboard(Camera_Movement direction, float deltaTime)
     {
         float velocity = MovementSpeed * deltaTime;
+        if (direction == SPRINT && !isSprinting)
+        {
+            MovementSpeed *= 2.0f;
+            velocity = MovementSpeed * deltaTime;
+            isSprinting = true;
+        }
+        else if (isSprinting)
+        {
+            isSprinting = false;
+            MovementSpeed /= 2.0f;
+        }
         if (direction == FORWARD)
             Position += Front * velocity;
         if (direction == BACKWARD)
@@ -76,6 +91,10 @@ public:
             Position -= Right * velocity;
         if (direction == RIGHT)
             Position += Right * velocity;
+        if (direction == UP)
+            Position += WorldUp * velocity;
+        if (direction == DOWN)
+            Position -= WorldUp * velocity;
     }
 
     // processes input received from a mouse input system. Expects the offset value in both the x and y direction.
@@ -106,8 +125,8 @@ public:
         Zoom -= (float)yoffset;
         if (Zoom < 1.0f)
             Zoom = 1.0f;
-        if (Zoom > 45.0f)
-            Zoom = 45.0f;
+        if (Zoom > 120.0f)
+            Zoom = 120.0f;
     }
 
 private:
