@@ -8,21 +8,33 @@
 	uniform sampler2D texture1;
 	uniform vec3 lightPos; 
 	uniform vec3 lightColor;
-	uniform vec3 objectColor;
+	uniform vec3 viewPos;
+	uniform float ambientK;
+	uniform float diffuseK;
+	uniform float specularK;
+	uniform float shininess;
 		
 	void main()
 	{
+		vec3 image = texture(texture1, TexCoord).rgb;
 		// ambient lighting
-		float ambientStrength = 0.1;
-		vec3 ambient = ambientStrength * lightColor;
+		vec3 ambient = ambientK * lightColor * image;
   	
 		// diffusion
 		vec3 norm = normalize(Normal);
 		vec3 lightDir = normalize(lightPos - FragPos);
 		float diff = max(dot(norm, lightDir), 0.0);
-		vec3 diffuse = diff * lightColor;
-            
-		vec3 result = (ambient + diffuse) * objectColor;
+		diff *= diffuseK;
+		vec3 diffuse = diff * lightColor * image;
 
-		FragColor = mix(vec4(result, 1.0f), texture(texture1, TexCoord), 0.5);
+		// specular
+		vec3 viewDir = normalize(viewPos - FragPos);
+		vec3 halfwayDir = normalize(lightDir + viewDir);
+		float spec = pow(max(dot(norm, halfwayDir), 0.0), shininess);
+		spec *= specularK;
+		vec3 specular = spec * lightColor * image;
+            
+		vec3 result = (ambient + diffuse + specular);
+
+		FragColor = vec4(result, 1.0f);
 	};

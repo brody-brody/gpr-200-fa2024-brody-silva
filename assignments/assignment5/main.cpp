@@ -9,6 +9,10 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include <imgui.h>
+#include <imgui_impl_glfw.h>
+#include <imgui_impl_opengl3.h>
+
 #include "../core/bsilva/shader.h"
 #include "../core/bsilva/texture2D.h"
 #include "../core/bsilva/camera.h"
@@ -18,8 +22,8 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void processInput(GLFWwindow* window);
 
-const int SCREEN_WIDTH = 1000;
-const int SCREEN_HEIGHT = 1000;
+const int SCREEN_WIDTH = 2000;
+const int SCREEN_HEIGHT = 2000;
 
 // lighting cube pos
 glm::vec3 lightPos(0.0f, 0.0f, -10.0f);
@@ -129,7 +133,13 @@ int main() {
 	glfwSetCursorPosCallback(window, mouse_callback);
 	glfwSetScrollCallback(window, scroll_callback);
 
-	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+
+	//imgui initialization
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGui_ImplGlfw_InitForOpenGL(window, true);
+	ImGui_ImplOpenGL3_Init();
 
 	// enabling alpha blending
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -181,14 +191,21 @@ int main() {
 
 	cubeShader.use();
 	cubeShader.setInt("texture1", 0);
-	cubeShader.setVec3("objectColor", 1.0f, 0.5f, 0.31f);
-	cubeShader.setVec3("lightColor", 1.0f, 1.0f, 1.0f);
-	cubeShader.setVec3("lightPos", lightPos);
 
 	double timeSinceStart = glfwGetTime();
 	double lastFrame = 0.0f;
 
 	glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)SCREEN_WIDTH / (float)SCREEN_HEIGHT, 0.1f, 1000.0f);
+
+	// defaults for all shaders
+	glm::vec3 lightColor = glm::vec3(1.0f);
+	float ambientK = 0.1f;
+	float diffuseK = 0.6f;
+	float specularK = 0.7f;
+	float shininess = 32.0f;
+	
+	// imgui variable
+	bool movingCubes = true;
 
 	//Render loop
 	while (!glfwWindowShouldClose(window)) 
@@ -197,14 +214,37 @@ int main() {
 		
 		double currentTime = glfwGetTime();
 		double deltaTimeTotal = currentTime - timeSinceStart;
+		if (!movingCubes)
+			deltaTimeTotal = 1.0f;
 		deltaTime = currentTime - lastFrame;
 		lastFrame = currentTime;
 
 		processInput(window);
 	
 		//Clear framebuffer
-		glClearColor(0.375f, 0.45f, 0.5f, 1.0f);
+		glClearColor(0.05f, 0.05f, 0.05f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // clearing color buffer
+
+		// start the draw for imgui window
+		ImGui_ImplGlfw_NewFrame();
+		ImGui_ImplOpenGL3_NewFrame();
+		ImGui::NewFrame();
+
+		// edit the window
+		ImGui::Begin("Light Settings");
+		ImGui::Text("Control the light cube with the settings below!");
+		ImGui::DragFloat3("Light Position", &lightPos.x, 0.1f);
+		ImGui::ColorEdit3("Light Color", &lightColor.r);
+		ImGui::SliderFloat("Ambient K", &ambientK, 0.0f, 1.0f);
+		ImGui::SliderFloat("Diffuse K", &diffuseK, 0.0f, 1.0f);
+		ImGui::SliderFloat("Specular K", &specularK, 0.0f, 1.0f);
+		ImGui::SliderFloat("Shininess", &shininess, 2.0f, 1024.0f);
+		ImGui::Checkbox("Moving Cubes", &movingCubes);
+		ImGui::End();
+
+		// render the elements using opengl
+		ImGui::Render();
+		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
 		// activate shader
 		cubeShader.use();
@@ -224,14 +264,21 @@ int main() {
 		// camera
 		glm::mat4 view = camera.GetViewMatrix();
 		cubeShader.setMat4("view", view);
+		cubeShader.setVec3("viewPos", camera.Position);
+		cubeShader.setVec3("lightColor", lightColor);
+		cubeShader.setVec3("lightPos", lightPos);
+		cubeShader.setFloat("ambientK", ambientK);
+		cubeShader.setFloat("diffuseK", diffuseK);
+		cubeShader.setFloat("specularK", specularK);
+		cubeShader.setFloat("shininess", shininess);
 
 		//render container
 		glBindVertexArray(VAO);
 		for (unsigned int i = 0; i < 20; i++)
 		{
 			glm::mat4 model = glm::mat4(1.0f);
-			model = glm::translate(model, glm::vec3(cubePositions[i].x, cubePositions[i].y, cubePositions[i].z));
-			float angle = 20.0f * i;
+			model = glm::translate(model, glm::vec3(cubePositions[i].x * sin(deltaTimeTotal), cubePositions[i].y * cos(deltaTimeTotal), cubePositions[i].z));
+			float angle = 20.0f * i * deltaTimeTotal;
 			model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
 			model = glm::scale(model, glm::vec3(cubeScales[i], cubeScales[i], cubeScales[i]));
 			cubeShader.setMat4("model", model);
@@ -247,6 +294,7 @@ int main() {
 		model = glm::translate(model, lightPos);
 		model = glm::scale(model, glm::vec3(0.2f));
 		lightShader.setMat4("model", model);
+		lightShader.setVec3("lightColor", lightColor);
 
 		//glBindVertexArray(lightCubeVAO);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
@@ -288,6 +336,15 @@ void processInput(GLFWwindow* window)
 		perspective = false;
 	if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS)
 		perspective = true;
+	// requiring user to hold down right mouse button for camera movement
+	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_2) == GLFW_PRESS)
+	{
+		glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+	}
+	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_2) == GLFW_RELEASE)
+	{
+		glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+	}
 }
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
@@ -297,23 +354,27 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 
 void mouse_callback(GLFWwindow* window, double xposIn, double yposIn)
 {
-	float xpos = static_cast<float>(xposIn);
-	float ypos = static_cast<float>(yposIn);
-
-	if (firstMouse)
+	// dont allow cursor movement if the cursor isnt locked
+	if (glfwGetInputMode(window, GLFW_CURSOR) == GLFW_CURSOR_DISABLED)
 	{
+		float xpos = static_cast<float>(xposIn);
+		float ypos = static_cast<float>(yposIn);
+
+		if (firstMouse)
+		{
+			lastX = xpos;
+			lastY = ypos;
+			firstMouse = false;
+		}
+
+		float xoffset = xpos - lastX;
+		float yoffset = lastY - ypos;
+
 		lastX = xpos;
 		lastY = ypos;
-		firstMouse = false;
+
+		camera.ProcessMouseMovement(xoffset, yoffset);
 	}
-
-	float xoffset = xpos - lastX;
-	float yoffset = lastY - ypos;
-
-	lastX = xpos;
-	lastY = ypos;
-
-	camera.ProcessMouseMovement(xoffset, yoffset);
 }
 
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
